@@ -68,11 +68,38 @@ Short version: requests → BullMQ queue → worker pool → cache check → ded
 ## Demo
 
 ### Architecture
+
+The full system at a glance — requests flow through cache → dedup → circuit breaker → scraper, with each layer designed to avoid an unnecessary scrape.
+
 ![Architecture diagram](docs/screenshots/1-architecture.png)
 
 ### First scrape
+
+A fresh request triggers a real scrape. The fake scraper simulates a 1–3 second proxy-backed call and returns structured product data. In production, this is where actual proxy cost is incurred.
+
 ![First scrape](docs/screenshots/2-first-scrape.png)
 
 ### Cache hit on repeated query
+
+The same request sent moments later is served instantly from the cache. No scrape runs, no proxy cost. This is the primary cost-reduction mechanism — repeat queries within the TTL window cost nothing.
+
 ![Cache hit](docs/screenshots/3-cache-hit.png)
+
+### In-flight deduplication
+
+Five identical requests fired in rapid succession. Only one actual scrape runs; the rest hit the cache or share the in-flight promise. This handles the "100 users searching tide pods at the same instant" scenario.
+
+![Deduplication](docs/screenshots/4-dedup.png)
+
+### Retries with exponential backoff
+
+When the scraper fails, jobs are automatically retried with delays of 1s, 2s, 4s, and 8s. Transient failures recover; permanent failures stop wasting resources after ~15 seconds.
+
+![Retries](docs/screenshots/5-retries.png)
+
+### Circuit breaker opens
+
+After repeated failures for a single retailer, the per-retailer circuit breaker opens. Subsequent requests for that retailer fail fast for 60 seconds — protecting proxy budget and preventing cascading load while the underlying issue is investigated.
+
+![Circuit open](docs/screenshots/6-circuit-open.png)
 
