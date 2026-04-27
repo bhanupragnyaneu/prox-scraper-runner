@@ -67,9 +67,12 @@ Short version: requests → BullMQ queue → worker pool → cache check → ded
 
 ## Demo
 
-See `demo.mp4` (the link in the submission email). Shows:
+### Architecture
+![Architecture diagram](docs/screenshots/1-architecture.png)
 
-1. A first scrape runs and returns results
-2. The same query repeated → instant cache hit, no scrape
-3. Multiple identical requests in parallel → one scrape, all share the result (dedup)
-4. Forced failures → exponential-backoff retries → circuit opens after threshold
+### First scrape
+![First scrape](docs/screenshots/2-first-scrape.png)
+
+### Cache hit on repeated query
+![Cache hit](docs/screenshots/3-cache-hit.png)
+
